@@ -1,0 +1,63 @@
+- [x] Ajouter relations dans le schéma Prisma (userId dans Product, etc.)
+- [x] Ajouter champ type dans Notification
+- [x] Ajouter champ priority dans Product
+- [x] Générer migration Prisma
+- [x] Create src/types/enums.ts
+- [x] Create src/types/User.ts
+- [x] Create src/types/Product.ts
+- [x] Create src/types/ProductImage.ts
+- [x] Create src/types/Notification.ts
+- [x] Create src/types/Category.ts
+- [x] Create src/types/ModerationLog.ts
+- [x] Create src/controllers/UserController.ts
+- [x] Create src/controllers/ProductController.ts
+- [x] Create src/controllers/ProductImageController.ts
+- [x] Create src/controllers/NotificationController.ts
+- [x] Create src/controllers/CategoryController.ts
+- [x] Create src/controllers/ModerationLogController.ts
+- [x] Create src/utils/messages/errorMessage.ts
+- [x] Create src/utils/messages/successMessage.ts
+- [x] Update controllers to use centralized messages
+- [x] Add Create and Update DTOs to src/types/User.ts
+- [x] Add Create and Update DTOs to src/types/Product.ts
+- [x] Add Create and Update DTOs to src/types/ProductImage.ts
+- [x] Add Create and Update DTOs to src/types/Notification.ts
+- [x] Add Create and Update DTOs to src/types/Category.ts
+- [x] Add Create and Update DTOs to src/types/ModerationLog.ts
+- [x] Create src/config/db.ts
+- [x] Create src/repositories/UserRepository.ts
+- [x] Create src/repositories/ProductRepository.ts
+- [x] Create src/repositories/ProductImageRepository.ts
+- [x] Create src/repositories/NotificationRepository.ts
+- [x] Create src/repositories/CategoryRepository.ts
+- [x] Create src/repositories/ModerationLogRepository.ts
+- [x] Create src/services/UserService.ts
+- [x] Create src/services/ProductService.ts
+- [x] Create src/services/ProductImageService.ts
+- [x] Create src/services/NotificationService.ts
+- [x] Create src/services/CategoryService.ts
+- [x] Create src/services/ModerationLogService.ts
+- [x] Create src/utils/codes/successCode.ts
+- [x] Create src/utils/codes/errorCode.ts
+- [x] Update controllers to use centralized codes
+- [x] Install Zod
+- [x] Create src/validators/userValidator.ts
+- [x] Create src/validators/productValidator.ts
+- [x] Create src/validators/productImageValidator.ts
+- [x] Create src/validators/notificationValidator.ts
+- [x] Create src/validators/categoryValidator.ts
+- [x] Create src/validators/moderationLogValidator.ts
+- [x] Apply validations in UserController
+- [x] Apply validations in ProductController
+- [x] Apply validations in ProductImageController
+- [x] Apply validations in NotificationController
+- [x] Apply validations in CategoryController
+- [x] Apply validations in ModerationLogController
+- [x] Create src/routes/userRoutes.ts
+- [x] Create src/routes/productRoutes.ts
+- [x] Create src/routes/productImageRoutes.ts
+- [x] Create src/routes/notificationRoutes.ts
+- [x] Create src/routes/categoryRoutes.ts
+- [x] Create src/routes/moderationLogRoutes.ts
+- [x] Update src/routes.ts to centralize all routes
+- [x] Update src/index.ts to use routes.ts and configure the server
