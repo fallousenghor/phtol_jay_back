@@ -51,6 +51,8 @@ model Product {
   price       Float?
   userId      Int
   user        User     @relation("UserProducts", fields: [userId], references: [id])
+  categoryId  Int?
+  category    Category? @relation("ProductCategory", fields: [categoryId], references: [id])
   isApproved  Boolean  @default(false)
   priority    Boolean  @default(false) // True if user is VIP
   views       Int      @default(0)
@@ -85,6 +87,8 @@ model Category {
   name      String
   createdAt DateTime
   updatedAt DateTime
+
+  products  Product[] @relation("ProductCategory")
 }
 
 model ModerationLog {

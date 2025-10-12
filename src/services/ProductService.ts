@@ -12,8 +12,8 @@ export class ProductService {
     return this.productRepository.findById(id);
   }
 
-  async findAll(): Promise<Product[]> {
-    return this.productRepository.findAll();
+  async findAll(categoryId?: number): Promise<Product[]> {
+    return this.productRepository.findAll(categoryId);
   }
 
   async update(id: number, data: UpdateProduct): Promise<Product> {

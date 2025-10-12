@@ -1,6 +1,7 @@
 import type { User } from './User';
 import type { ProductImage } from './ProductImage';
 import { ModerationLog } from './ModerationLog';
+import type { Category } from './Category';
 
 export interface Seller {
   id: number;
@@ -18,6 +19,8 @@ export interface Product {
   price: number | null;
   userId: number;
   user?: Seller;
+  categoryId?: number | null;
+  category?: Category | null;
   isApproved: boolean;
   priority: boolean;
   views: number;
@@ -33,6 +36,7 @@ export interface CreateProduct {
   description: string;
   price?: number;
   userId: number;
+  categoryId?: number;
   isApproved?: boolean;
   priority?: boolean;
   views?: number;
@@ -44,6 +48,7 @@ export interface UpdateProduct {
   description?: string;
   price?: number;
   userId?: number;
+  categoryId?: number;
   isApproved?: boolean;
   priority?: boolean;
   views?: number;

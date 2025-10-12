@@ -10,6 +10,7 @@ export class ProductRepository {
       description: data.description,
       price: data.price,
       user: { connect: { id: data.userId } },
+      category: data.categoryId ? { connect: { id: data.categoryId } } : undefined,
       isApproved: data.isApproved ?? false,
       priority: data.priority ?? false,
       views: data.views ?? 0,
@@ -25,6 +26,7 @@ export class ProductRepository {
       where: { id },
       include: {
         images: true,
+        category: true,
         user: {
           select: {
             id: true,
@@ -39,10 +41,12 @@ export class ProductRepository {
     });
   }
 
-  async findAll(): Promise<Product[]> {
+  async findAll(categoryId?: number): Promise<Product[]> {
     return prisma.product.findMany({
+      where: categoryId ? { categoryId } : undefined,
       include: {
         images: true,
+        category: true,
         user: {
           select: {
             id: true,
@@ -63,6 +67,7 @@ export class ProductRepository {
     if (data.description !== undefined) prismaData.description = data.description;
     if (data.price !== undefined) prismaData.price = data.price;
     if (data.userId !== undefined) prismaData.user = { connect: { id: data.userId } };
+    if (data.categoryId !== undefined) prismaData.category = data.categoryId ? { connect: { id: data.categoryId } } : { disconnect: true };
     if (data.isApproved !== undefined) prismaData.isApproved = data.isApproved;
     if (data.priority !== undefined) prismaData.priority = data.priority;
     if (data.views !== undefined) prismaData.views = data.views;

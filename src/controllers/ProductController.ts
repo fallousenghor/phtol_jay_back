@@ -12,7 +12,11 @@ export class ProductController {
 
   async create(req: Request, res: Response): Promise<void> {
     try {
-      const data = createProductSchema.parse(req.body);
+      const parsedData = createProductSchema.parse(req.body);
+      const data: CreateProduct = {
+        ...parsedData,
+        expiresAt: parsedData.expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      };
       const product = await this.productService.create(data);
       res.status(SuccessCode.CREATED).json(product);
     } catch (error) {
@@ -40,7 +44,8 @@ export class ProductController {
 
   async findAll(req: Request, res: Response): Promise<void> {
     try {
-      const products = await this.productService.findAll();
+      const { categoryId } = req.query;
+      const products = await this.productService.findAll(categoryId ? parseInt(categoryId as string) : undefined);
       res.status(SuccessCode.OK).json(products);
     } catch (error) {
       res.status(ErrorCode.INTERNAL_SERVER_ERROR).json({ error: (error as Error).message });
