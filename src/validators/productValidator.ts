@@ -6,7 +6,7 @@ export const createProductSchema = z.object({
   description: z.string().min(1, ERROR_MESSAGES.PRODUCT_DESCRIPTION_REQUIRED),
   price: z.number().optional(),
   userId: z.number().int().positive(ERROR_MESSAGES.USER_ID_INVALID),
-  expiresAt: z.string().datetime(ERROR_MESSAGES.PRODUCT_EXPIRES_AT_INVALID).transform((val) => new Date(val)),
+  expiresAt: z.string().datetime(ERROR_MESSAGES.PRODUCT_EXPIRES_AT_INVALID).transform((val) => new Date(val)).optional(),
   priority: z.boolean().optional(),
 });
 

@@ -19,13 +19,13 @@ export class UserService {
     return this.userRepository.findById(id);
   }
 
-  async login(email: string, password: string): Promise<string | null> {
+  async login(email: string, password: string): Promise<{ user: User; token: string } | null> {
     const user = await this.findByEmail(email);
     if (!user || !(await verifyPassword(password, user.password))) {
       return null;
     }
     const token = generateToken({ id: user.id, email: user.email, role: user.role as Role });
-    return token;
+    return { user, token };
   }
 
   async findAll(): Promise<User[]> {

@@ -33,6 +33,9 @@ model User {
   password  String
   role      Role
   isVIP     Boolean  @default(false)
+  phoneNumber  String
+  whatsappNumber String?
+  shopLink String?
   createdAt DateTime
   updatedAt DateTime
 

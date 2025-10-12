@@ -42,12 +42,12 @@ export class UserController {
   async login(req: Request, res: Response): Promise<void> {
     try {
       const data = loginSchema.parse(req.body);
-      const token = await this.userService.login(data.email, data.password);
-      if (!token) {
+      const result = await this.userService.login(data.email, data.password);
+      if (!result) {
         res.status(ErrorCode.UNAUTHORIZED).json({ error: ERROR_MESSAGES.INVALID_CREDENTIALS });
         return;
       }
-      res.status(SuccessCode.OK).json({ token });
+      res.status(SuccessCode.OK).json(result);
     } catch (error) {
       if (error instanceof ZodError) {
         res.status(ErrorCode.BAD_REQUEST).json({ error: error.issues });

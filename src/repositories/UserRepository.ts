@@ -10,6 +10,9 @@ export class UserRepository {
       password: data.password,
       role: data.role,
       isVIP: data.isVIP ?? false,
+      phoneNumber: data.phoneNumber,
+      whatsappNumber: data.whatsappNumber,
+      shopLink: data.shopLink,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -35,6 +38,9 @@ export class UserRepository {
     if (data.password !== undefined) prismaData.password = data.password;
     if (data.role !== undefined) prismaData.role = data.role;
     if (data.isVIP !== undefined) prismaData.isVIP = data.isVIP;
+    if (data.phoneNumber !== undefined) prismaData.phoneNumber = data.phoneNumber;
+    if (data.whatsappNumber !== undefined) prismaData.whatsappNumber = data.whatsappNumber;
+    if (data.shopLink !== undefined) prismaData.shopLink = data.shopLink;
     return prisma.user.update({ where: { id }, data: prismaData });
   }
 

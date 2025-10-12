@@ -10,6 +10,9 @@ export interface User {
   password: string;
   role: Role;
   isVIP: boolean;
+  phoneNumber: string;
+  whatsappNumber: string | null;
+  shopLink: string | null;
   createdAt: Date;
   updatedAt: Date;
   products?: Product[];
@@ -23,6 +26,9 @@ export interface CreateUser {
   password: string;
   role: Role;
   isVIP?: boolean;
+  phoneNumber: string;
+  whatsappNumber?: string;
+  shopLink?: string;
 }
 
 export interface UpdateUser {
@@ -31,4 +37,7 @@ export interface UpdateUser {
   password?: string;
   role?: Role;
   isVIP?: boolean;
+  phoneNumber?: string;
+  whatsappNumber?: string;
+  shopLink?: string;
 }

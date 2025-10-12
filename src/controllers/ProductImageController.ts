@@ -1,18 +1,45 @@
 import { Request, Response } from 'express';
-import { ZodError } from 'zod';
+import { ZodError, z } from 'zod';
 import { ProductImageService } from '../services/ProductImageService';
 import type { CreateProductImage, UpdateProductImage } from '../types/ProductImage';
 import { ERROR_MESSAGES } from '../utils/messages/errorMessage';
 import { SuccessCode } from '../utils/codes/successCode';
 import { ErrorCode } from '../utils/codes/errorCode';
 import { createProductImageSchema, updateProductImageSchema } from '../validators/productImageValidator';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage });
 
 export class ProductImageController {
   constructor(private productImageService: ProductImageService) {}
 
-  async create(req: Request, res: Response): Promise<void> {
+  async create(req: Request & { file?: Express.Multer.File }, res: Response): Promise<void> {
     try {
-      const data = createProductImageSchema.parse(req.body);
+      console.log('req.body:', req.body);
+      console.log('req.file:', req.file);
+      const productId = z.coerce.number().int().positive().parse(req.body.productId);
+      if (!req.file) {
+        res.status(ErrorCode.BAD_REQUEST).json({ error: 'Image file is required' });
+        return;
+      }
+      const url = `/uploads/${req.file.filename}`;
+      const data = { productId, url };
       const productImage = await this.productImageService.create(data);
       res.status(SuccessCode.CREATED).json(productImage);
     } catch (error) {

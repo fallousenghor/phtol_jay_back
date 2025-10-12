@@ -2,13 +2,22 @@ import type { User } from './User';
 import type { ProductImage } from './ProductImage';
 import { ModerationLog } from './ModerationLog';
 
+export interface Seller {
+  id: number;
+  userName: string;
+  email: string;
+  phoneNumber: string;
+  whatsappNumber: string | null;
+  shopLink: string | null;
+}
+
 export interface Product {
   id: number;
   title: string;
   description: string;
   price: number | null;
   userId: number;
-  user?: User;
+  user?: Seller;
   isApproved: boolean;
   priority: boolean;
   views: number;

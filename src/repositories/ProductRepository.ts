@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client';
 
 export class ProductRepository {
   async create(data: CreateProduct): Promise<Product> {
+    const expiresAt = data.expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
     const prismaData: Prisma.ProductCreateInput = {
       title: data.title,
       description: data.description,
@@ -12,7 +13,7 @@ export class ProductRepository {
       isApproved: data.isApproved ?? false,
       priority: data.priority ?? false,
       views: data.views ?? 0,
-      expiresAt: data.expiresAt,
+      expiresAt,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -20,11 +21,40 @@ export class ProductRepository {
   }
 
   async findById(id: number): Promise<Product | null> {
-    return prisma.product.findUnique({ where: { id } });
+    return prisma.product.findUnique({
+      where: { id },
+      include: {
+        images: true,
+        user: {
+          select: {
+            id: true,
+            userName: true,
+            email: true,
+            phoneNumber: true,
+            whatsappNumber: true,
+            shopLink: true
+          }
+        }
+      }
+    });
   }
 
   async findAll(): Promise<Product[]> {
-    return prisma.product.findMany();
+    return prisma.product.findMany({
+      include: {
+        images: true,
+        user: {
+          select: {
+            id: true,
+            userName: true,
+            email: true,
+            phoneNumber: true,
+            whatsappNumber: true,
+            shopLink: true
+          }
+        }
+      }
+    });
   }
 
   async update(id: number, data: UpdateProduct): Promise<Product> {
