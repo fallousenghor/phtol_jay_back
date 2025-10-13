@@ -69,6 +69,7 @@ model ProductImage {
   productId Int
   product   Product  @relation("ProductImages", fields: [productId], references: [id])
   url       String
+  publicId  String   // Cloudinary public ID
   createdAt DateTime @default(now())
 }
 

@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { ProductImageController } from '../controllers/ProductImageController';
 import { ProductImageService } from '../services/ProductImageService';
 import { ProductImageRepository } from '../repositories/ProductImageRepository';
@@ -13,11 +14,8 @@ const controller = new ProductImageController(service);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
+    // Utiliser le répertoire temporaire du système pour le stockage temporaire
+    cb(null, path.join(os.tmpdir()));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);

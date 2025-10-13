@@ -8,39 +8,67 @@ import { ErrorCode } from '../utils/codes/errorCode';
 import { createProductImageSchema, updateProductImageSchema } from '../validators/productImageValidator';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
+import os from 'os';
+import cloudinaryService from '../services/CloudinaryService';
 
+// Configuration de multer avec des vérifications supplémentaires
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
+    // Utiliser le répertoire temporaire du système
+    const uploadPath = os.tmpdir();
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    const safeFilename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
+    cb(null, safeFilename);
   }
 });
 
-const upload = multer({ storage });
+const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  // Accepter uniquement les images
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed!'));
+  }
+};
+
+const upload = multer({ 
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // Limite à 5MB
+  }
+});
 
 export class ProductImageController {
   constructor(private productImageService: ProductImageService) {}
 
   async create(req: Request & { file?: Express.Multer.File }, res: Response): Promise<void> {
     try {
-      console.log('req.body:', req.body);
-      console.log('req.file:', req.file);
       const productId = z.coerce.number().int().positive().parse(req.body.productId);
       if (!req.file) {
         res.status(ErrorCode.BAD_REQUEST).json({ error: 'Image file is required' });
         return;
       }
-      const url = `/uploads/${req.file.filename}`;
-      const data = { productId, url };
+
+      console.log('Starting image upload process...');
+      
+      // Upload to Cloudinary
+      const cloudinaryResult = await cloudinaryService.uploadImage(req.file);
+      console.log('Cloudinary upload result:', cloudinaryResult);
+      
+      const data = { 
+        productId, 
+        url: cloudinaryResult.url,
+        publicId: cloudinaryResult.publicId 
+      };
+      console.log('Preparing to save image data:', data);
+      
       const productImage = await this.productImageService.create(data);
+      console.log('Image saved to database:', productImage);
+      
       res.status(SuccessCode.CREATED).json(productImage);
     } catch (error) {
       if (error instanceof ZodError) {

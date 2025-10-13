@@ -7,6 +7,7 @@ export class ProductImageRepository {
     const prismaData: Prisma.ProductImageCreateInput = {
       product: { connect: { id: data.productId } },
       url: data.url,
+      publicId: data.publicId,
       createdAt: new Date(),
     };
     return prisma.productImage.create({ data: prismaData });
@@ -24,6 +25,7 @@ export class ProductImageRepository {
     const prismaData: Prisma.ProductImageUpdateInput = {};
     if (data.productId !== undefined) prismaData.product = { connect: { id: data.productId } };
     if (data.url !== undefined) prismaData.url = data.url;
+    if (data.publicId !== undefined) prismaData.publicId = data.publicId;
     return prisma.productImage.update({ where: { id }, data: prismaData });
   }
 
