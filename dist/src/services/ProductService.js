@@ -11,8 +11,8 @@ class ProductService {
     async findById(id) {
         return this.productRepository.findById(id);
     }
-    async findAll(categoryId) {
-        return this.productRepository.findAll(categoryId, 'APPROVED');
+    async findAll(categoryId, status) {
+        return this.productRepository.findAll(categoryId, status);
     }
     async update(id, data) {
         return this.productRepository.update(id, data);
