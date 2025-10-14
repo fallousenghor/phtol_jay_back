@@ -77,5 +77,46 @@ class ProductController {
             res.status(errorCode_1.ErrorCode.INTERNAL_SERVER_ERROR).json({ error: error.message });
         }
     }
+    async getAdminStats(req, res) {
+        try {
+            const stats = await this.productService.getAdminStats();
+            res.status(successCode_1.SuccessCode.OK).json(stats);
+        }
+        catch (error) {
+            res.status(errorCode_1.ErrorCode.INTERNAL_SERVER_ERROR).json({ error: error.message });
+        }
+    }
+    async getPendingProducts(req, res) {
+        try {
+            const products = await this.productService.getPendingProducts();
+            res.status(successCode_1.SuccessCode.OK).json(products);
+        }
+        catch (error) {
+            res.status(errorCode_1.ErrorCode.INTERNAL_SERVER_ERROR).json({ error: error.message });
+        }
+    }
+    async approveProduct(req, res) {
+        try {
+            const id = parseInt(req.params.id);
+            const moderatorId = req.user?.id;
+            const product = await this.productService.approveProduct(id, moderatorId);
+            res.status(successCode_1.SuccessCode.OK).json(product);
+        }
+        catch (error) {
+            res.status(errorCode_1.ErrorCode.INTERNAL_SERVER_ERROR).json({ error: error.message });
+        }
+    }
+    async rejectProduct(req, res) {
+        try {
+            const id = parseInt(req.params.id);
+            const moderatorId = req.user?.id;
+            const { reason } = req.body;
+            const product = await this.productService.rejectProduct(id, moderatorId, reason);
+            res.status(successCode_1.SuccessCode.OK).json(product);
+        }
+        catch (error) {
+            res.status(errorCode_1.ErrorCode.INTERNAL_SERVER_ERROR).json({ error: error.message });
+        }
+    }
 }
 exports.ProductController = ProductController;

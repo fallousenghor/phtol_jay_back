@@ -16,4 +16,9 @@ router.get('/:id', (req, res) => controller.findById(req, res));
 router.post('/', (req, res) => controller.create(req, res));
 router.put('/:id', (req, res) => controller.update(req, res));
 router.delete('/:id', (req, res) => controller.delete(req, res));
+// Admin routes
+router.get('/admin/stats', (req, res) => controller.getAdminStats(req, res));
+router.get('/admin/pending-products', (req, res) => controller.getPendingProducts(req, res));
+router.put('/:id/approve', (req, res) => controller.approveProduct(req, res));
+router.put('/:id/reject', (req, res) => controller.rejectProduct(req, res));
 exports.default = router;

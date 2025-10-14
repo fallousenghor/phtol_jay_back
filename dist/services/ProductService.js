@@ -20,5 +20,17 @@ class ProductService {
     async delete(id) {
         return this.productRepository.delete(id);
     }
+    async getPendingProducts() {
+        return this.productRepository.findPendingProducts();
+    }
+    async getAdminStats() {
+        return this.productRepository.getAdminStats();
+    }
+    async approveProduct(id, moderatorId) {
+        return this.productRepository.approveProduct(id, moderatorId);
+    }
+    async rejectProduct(id, moderatorId, reason) {
+        return this.productRepository.rejectProduct(id, moderatorId, reason);
+    }
 }
 exports.ProductService = ProductService;

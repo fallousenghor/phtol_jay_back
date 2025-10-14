@@ -22,6 +22,27 @@ export class ModerationLogRepository {
     return prisma.moderationLog.findMany();
   }
 
+  async findRecent(limit: number = 10): Promise<ModerationLog[]> {
+    return prisma.moderationLog.findMany({
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        product: {
+          select: {
+            id: true,
+            title: true
+          }
+        },
+        moderator: {
+          select: {
+            id: true,
+            userName: true
+          }
+        }
+      }
+    });
+  }
+
   async update(id: number, data: UpdateModerationLog): Promise<ModerationLog> {
     const prismaData: Prisma.ModerationLogUpdateInput = {};
     if (data.productId !== undefined) prismaData.product = { connect: { id: data.productId } };

@@ -16,6 +16,10 @@ export class ModerationLogService {
     return this.moderationLogRepository.findAll();
   }
 
+  async findRecent(limit: number = 10): Promise<ModerationLog[]> {
+    return this.moderationLogRepository.findRecent(limit);
+  }
+
   async update(id: number, data: UpdateModerationLog): Promise<ModerationLog> {
     return this.moderationLogRepository.update(id, data);
   }

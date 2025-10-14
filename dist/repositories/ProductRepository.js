@@ -86,5 +86,102 @@ class ProductRepository {
     async delete(id) {
         await db_1.default.product.delete({ where: { id } });
     }
+    async findPendingProducts() {
+        return db_1.default.product.findMany({
+            where: { isApproved: false },
+            include: {
+                images: true,
+                category: true,
+                user: {
+                    select: {
+                        id: true,
+                        userName: true,
+                        email: true,
+                        phoneNumber: true,
+                        whatsappNumber: true,
+                        shopLink: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+    }
+    async getAdminStats() {
+        const [totalProducts, pendingApprovals, approvedProducts, totalUsers, vipUsers] = await Promise.all([
+            db_1.default.product.count(),
+            db_1.default.product.count({ where: { isApproved: false } }),
+            db_1.default.product.count({ where: { isApproved: true } }),
+            db_1.default.user.count(),
+            db_1.default.user.count({ where: { isVIP: true } })
+        ]);
+        return {
+            totalProducts,
+            pendingApprovals,
+            approvedProducts,
+            totalUsers,
+            vipUsers
+        };
+    }
+    async approveProduct(id, moderatorId) {
+        // First update the product
+        const product = await db_1.default.product.update({
+            where: { id },
+            data: { isApproved: true },
+            include: {
+                images: true,
+                category: true,
+                user: {
+                    select: {
+                        id: true,
+                        userName: true,
+                        email: true,
+                        phoneNumber: true,
+                        whatsappNumber: true,
+                        shopLink: true
+                    }
+                }
+            }
+        });
+        // Create moderation log
+        await db_1.default.moderationLog.create({
+            data: {
+                productId: id,
+                moderatorId,
+                action: 'APPROVED'
+            }
+        });
+        return product;
+    }
+    async rejectProduct(id, moderatorId, reason) {
+        // First update the product
+        const product = await db_1.default.product.update({
+            where: { id },
+            data: { isApproved: false },
+            include: {
+                images: true,
+                category: true,
+                user: {
+                    select: {
+                        id: true,
+                        userName: true,
+                        email: true,
+                        phoneNumber: true,
+                        whatsappNumber: true,
+                        shopLink: true
+                    }
+                }
+            }
+        });
+        // Create moderation log
+        await db_1.default.moderationLog.create({
+            data: {
+                productId: id,
+                moderatorId,
+                action: 'REJECTED',
+                reason
+            }
+        });
+        return product;
+    }
 }
 exports.ProductRepository = ProductRepository;

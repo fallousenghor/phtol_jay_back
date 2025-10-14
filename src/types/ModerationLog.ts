@@ -5,9 +5,9 @@ import type { Action } from '@prisma/client';
 export interface ModerationLog {
   id: number;
   productId: number;
-  product?: Product;
+  product?: Product | { id: number; title: string };
   moderatorId: number;
-  moderator?: User;
+  moderator?: User | { id: number; userName: string };
   action: Action;
   reason: string | null;
   createdAt: Date;

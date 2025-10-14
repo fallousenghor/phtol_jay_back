@@ -47,6 +47,16 @@ export class ModerationLogController {
     }
   }
 
+  async findRecent(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const moderationLogs = await this.moderationLogService.findRecent(limit);
+      res.status(SuccessCode.OK).json(moderationLogs);
+    } catch (error) {
+      res.status(ErrorCode.INTERNAL_SERVER_ERROR).json({ error: (error as Error).message });
+    }
+  }
+
   async update(req: Request, res: Response): Promise<void> {
     try {
       const id = parseInt(req.params.id);

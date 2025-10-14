@@ -5,6 +5,7 @@ import productImageRoutes from './routes/productImageRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import categoryRoutes from './routes/categoryRoutes';
 import moderationLogRoutes from './routes/moderationLogRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.use('/product-images', productImageRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/moderation-logs', moderationLogRoutes);
+router.use('/admin', adminRoutes);
 
 export default router;
