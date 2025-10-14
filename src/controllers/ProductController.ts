@@ -44,8 +44,11 @@ export class ProductController {
 
   async findAll(req: Request, res: Response): Promise<void> {
     try {
-      const { categoryId } = req.query;
-      const products = await this.productService.findAll(categoryId ? parseInt(categoryId as string) : undefined);
+      const { categoryId, status } = req.query;
+      const products = await this.productService.findAll(
+        categoryId ? parseInt(categoryId as string) : undefined,
+        status as 'PENDING' | 'APPROVED' | 'REJECTED' | undefined
+      );
       res.status(SuccessCode.OK).json(products);
     } catch (error) {
       res.status(ErrorCode.INTERNAL_SERVER_ERROR).json({ error: (error as Error).message });

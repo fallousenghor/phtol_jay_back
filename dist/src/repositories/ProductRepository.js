@@ -14,7 +14,7 @@ class ProductRepository {
             price: data.price,
             user: { connect: { id: data.userId } },
             category: data.categoryId ? { connect: { id: data.categoryId } } : undefined,
-            isApproved: data.isApproved ?? false,
+            status: data.status ?? 'PENDING',
             priority: data.priority ?? false,
             views: data.views ?? 0,
             expiresAt,
@@ -42,9 +42,12 @@ class ProductRepository {
             }
         });
     }
-    async findAll(categoryId) {
+    async findAll(categoryId, status) {
         return db_1.default.product.findMany({
-            where: categoryId ? { categoryId } : undefined,
+            where: {
+                ...(categoryId && { categoryId }),
+                ...(status && { status })
+            },
             include: {
                 images: true,
                 category: true,
@@ -73,8 +76,8 @@ class ProductRepository {
             prismaData.user = { connect: { id: data.userId } };
         if (data.categoryId !== undefined)
             prismaData.category = data.categoryId ? { connect: { id: data.categoryId } } : { disconnect: true };
-        if (data.isApproved !== undefined)
-            prismaData.isApproved = data.isApproved;
+        if (data.status !== undefined)
+            prismaData.status = data.status;
         if (data.priority !== undefined)
             prismaData.priority = data.priority;
         if (data.views !== undefined)

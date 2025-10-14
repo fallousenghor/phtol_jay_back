@@ -3,15 +3,21 @@ import { ModerationLogRepository } from '../repositories/ModerationLogRepository
 
 export interface AdminStats {
   totalProducts: number;
-  pendingProducts: number;
-  approvedProducts: number;
-  rejectedProducts: number;
-  totalUsers: number;
-  vipUsers: number;
+  pendingApprovals: number;
+  expiringProducts: number;
+  rejectedToday: number;
+  vipActiveProducts: number;
+  avgModerationTime: number;
+  totalVipUsers: number;
   totalViews: number;
+  totalModerations: number;
+  recentModerations: ModerationAction[];
   approvalTrends: Array<{
     month: string;
     approvals: number;
+  }>;
+  viewTrends: Array<{
+    month: string;
     views: number;
   }>;
 }
@@ -51,49 +57,96 @@ export class AdminService {
   }
 
   async getAdminStats(): Promise<AdminStats> {
+    // Date pour les photos expirant dans 3 jours
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + 3);
+
+    // Date du début de la journée
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
     const [
       totalProducts,
-      pendingProducts,
-      approvedProducts,
-      rejectedProducts,
-      totalUsers,
-      vipUsers,
+      pendingApprovals,
+      expiringProducts,
+      rejectedToday,
+      vipActiveProducts,
+      avgModerationTime,
+      totalVipUsers,
       totalViews,
-      approvalTrends
+      totalModerations,
+      recentModerations,
+      approvalTrends,
+      viewTrends
     ] = await Promise.all([
       this.prisma.product.count(),
-      this.prisma.product.count({ where: { isApproved: false } }),
-      this.prisma.product.count({ where: { isApproved: true } }),
-      this.prisma.product.count({ where: { isApproved: false } }), // Note: Need to add rejected status to schema
-      this.prisma.user.count(),
+      this.prisma.product.count({ where: { status: 'PENDING' } }),
+      this.prisma.product.count({
+        where: {
+          expiresAt: {
+            lte: expirationDate,
+            gt: new Date()
+          },
+          status: 'APPROVED'
+        }
+      }),
+      this.prisma.product.count({
+        where: {
+          status: 'PENDING',
+          updatedAt: {
+            gte: todayStart
+          }
+        }
+      }),
+      this.prisma.product.count({
+        where: {
+          status: 'APPROVED',
+          user: {
+            isVIP: true
+          }
+        }
+      }),
+      // Calculer le temps moyen entre la création du produit et sa modération
+      this.prisma.$queryRaw<[{avg_time: number}]>`
+        SELECT AVG(EXTRACT(EPOCH FROM (ml."createdAt" - p."createdAt"))/60)::integer as avg_time
+        FROM "ModerationLog" ml
+        JOIN "Product" p ON p.id = ml."productId"
+        WHERE ml."action" IN ('APPROVED', 'REJECTED')
+      `.then(result => result[0]?.avg_time || 0),
       this.prisma.user.count({ where: { isVIP: true } }),
       this.prisma.product.aggregate({
         _sum: { views: true }
       }).then(result => result._sum.views || 0),
-      this.getApprovalTrends()
+      this.prisma.moderationLog.count(),
+      this.getRecentModerations(),
+      this.getApprovalTrends(),
+      this.getViewTrends()
     ]);
 
     return {
       totalProducts,
-      pendingProducts,
-      approvedProducts,
-      rejectedProducts,
-      totalUsers,
-      vipUsers,
+      pendingApprovals,
+      expiringProducts,
+      rejectedToday,
+      vipActiveProducts,
+      avgModerationTime,
+      totalVipUsers,
       totalViews,
-      approvalTrends
+      totalModerations,
+      recentModerations,
+      approvalTrends,
+      viewTrends
     };
   }
 
-  private async getApprovalTrends(): Promise<Array<{ month: string; approvals: number; views: number }>> {
+  private async getApprovalTrends(): Promise<Array<{ month: string; approvals: number }>> {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const trends = await this.prisma.$queryRaw<Array<{ month: string; approvals: number; views: number }>>`
+    const trends = await this.prisma.$queryRaw<Array<{ month: string; approvals: number }>>`
       SELECT
         TO_CHAR("createdAt", 'YYYY-MM') as month,
-        COUNT(CASE WHEN "isApproved" = true THEN 1 END) as approvals,
-        SUM("views") as views
+        COUNT(CASE WHEN "status" = 'APPROVED' THEN 1 END) as approvals
       FROM "Product"
       WHERE "createdAt" >= ${sixMonthsAgo}
       GROUP BY TO_CHAR("createdAt", 'YYYY-MM')
@@ -103,14 +156,34 @@ export class AdminService {
 
     return trends.map(trend => ({
       month: trend.month,
-      approvals: Number(trend.approvals),
+      approvals: Number(trend.approvals)
+    }));
+  }
+
+  private async getViewTrends(): Promise<Array<{ month: string; views: number }>> {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const trends = await this.prisma.$queryRaw<Array<{ month: string; views: number }>>`
+      SELECT
+        TO_CHAR("updatedAt", 'YYYY-MM') as month,
+        SUM("views") as views
+      FROM "Product"
+      WHERE "updatedAt" >= ${sixMonthsAgo}
+      GROUP BY TO_CHAR("updatedAt", 'YYYY-MM')
+      ORDER BY month DESC
+      LIMIT 6
+    `;
+
+    return trends.map(trend => ({
+      month: trend.month,
       views: Number(trend.views || 0)
     }));
   }
 
   async getPendingProducts(): Promise<PendingProduct[]> {
     const products = await this.prisma.product.findMany({
-      where: { isApproved: false },
+      where: { status: 'PENDING' },
       include: {
         user: {
           select: {
@@ -144,7 +217,7 @@ export class AdminService {
       // Update product status
       await tx.product.update({
         where: { id: productId },
-        data: { isApproved: true }
+        data: { status: 'APPROVED' }
       });
 
       // Log moderation action
@@ -158,10 +231,10 @@ export class AdminService {
 
   async rejectProduct(productId: number, adminId: number, reason?: string): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      // Update product status - Note: Need to add rejected status to schema
+      // Update product status
       await tx.product.update({
         where: { id: productId },
-        data: { isApproved: false } // For now, keep as not approved
+        data: { status: 'REJECTED' }
       });
 
       // Log moderation action

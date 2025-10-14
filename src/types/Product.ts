@@ -21,7 +21,7 @@ export interface Product {
   user?: Seller;
   categoryId?: number | null;
   category?: Category | null;
-  isApproved: boolean;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
   priority: boolean;
   views: number;
   expiresAt: Date;
@@ -37,7 +37,7 @@ export interface CreateProduct {
   price?: number;
   userId: number;
   categoryId?: number;
-  isApproved?: boolean;
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
   priority?: boolean;
   views?: number;
   expiresAt: Date;
@@ -49,7 +49,7 @@ export interface UpdateProduct {
   price?: number;
   userId?: number;
   categoryId?: number;
-  isApproved?: boolean;
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
   priority?: boolean;
   views?: number;
   expiresAt?: Date;

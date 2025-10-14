@@ -10,14 +10,14 @@ const adminController = new AdminController_1.AdminController();
 router.use(authMiddleware_1.authenticate);
 router.use((0, authMiddleware_1.authorize)(enums_1.Role.ADMIN));
 // Stats dashboard
-router.get('/stats', adminController.getAdminStats);
+router.get('/stats', adminController.getAdminStats.bind(adminController));
 // Gestion produits en attente
-router.get('/pending-products', adminController.getPendingProducts);
-router.post('/products/:id/approve', adminController.approveProduct);
-router.post('/products/:id/reject', adminController.rejectProduct);
+router.get('/pending-products', adminController.getPendingProducts.bind(adminController));
+router.post('/products/:id/approve', adminController.approveProduct.bind(adminController));
+router.post('/products/:id/reject', adminController.rejectProduct.bind(adminController));
 // Gestion utilisateurs VIP
-router.get('/vip-users', adminController.getVipUsers);
-router.post('/users/:id/toggle-vip', adminController.toggleVipStatus);
+router.get('/vip-users', adminController.getVipUsers.bind(adminController));
+router.post('/users/:id/toggle-vip', adminController.toggleVipStatus.bind(adminController));
 // Actions récentes de modération
-router.get('/recent-moderations', adminController.getRecentModerations);
+router.get('/recent-moderations', adminController.getRecentModerations.bind(adminController));
 exports.default = router;

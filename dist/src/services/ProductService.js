@@ -12,7 +12,7 @@ class ProductService {
         return this.productRepository.findById(id);
     }
     async findAll(categoryId) {
-        return this.productRepository.findAll(categoryId);
+        return this.productRepository.findAll(categoryId, 'APPROVED');
     }
     async update(id, data) {
         return this.productRepository.update(id, data);
