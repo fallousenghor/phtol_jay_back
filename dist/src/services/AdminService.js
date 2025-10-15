@@ -6,7 +6,7 @@ const ModerationLogRepository_1 = require("../repositories/ModerationLogReposito
 class AdminService {
     constructor() {
         this.prisma = new client_1.PrismaClient();
-        this.moderationLogRepository = new ModerationLogRepository_1.ModerationLogRepository();
+        this.moderationLogRepository = new ModerationLogRepository_1.ModerationLogRepository(this.prisma);
     }
     async getAdminStats() {
         const [totalProducts, pendingProducts, approvedProducts, rejectedProducts, totalUsers, vipUsers, totalViews, totalModerations, recentModerations, approvalTrends, viewTrends] = await Promise.all([
@@ -37,6 +37,61 @@ class AdminService {
             approvalTrends,
             viewTrends
         };
+    }
+    async getPendingProducts() {
+        const products = await this.prisma.product.findMany({
+            where: { status: 'PENDING' },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        userName: true,
+                        email: true
+                    }
+                },
+                images: {
+                    select: {
+                        id: true,
+                        url: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        return products.map(product => ({
+            id: product.id,
+            title: product.title,
+            description: product.description,
+            createdAt: product.createdAt,
+            user: product.user,
+            images: product.images
+        }));
+    }
+    async moderateProduct(params) {
+        const { productId, moderatorId, action, reason } = params;
+        await this.prisma.$transaction(async (tx) => {
+            const product = await tx.product.findUnique({
+                where: { id: productId }
+            });
+            if (!product) {
+                throw new Error('Product not found');
+            }
+            // Update product status
+            await tx.product.update({
+                where: { id: productId },
+                data: {
+                    status: action
+                }
+            });
+            // Create moderation log
+            await this.moderationLogRepository.create({
+                productId,
+                moderatorId,
+                action,
+                reason
+            });
+            // TODO: Send notification to product owner
+        });
     }
     async getApprovalTrends() {
         const sixMonthsAgo = new Date();
@@ -75,66 +130,6 @@ class AdminService {
             month: trend.month,
             views: Number(trend.views || 0)
         }));
-    }
-    async getPendingProducts() {
-        const products = await this.prisma.product.findMany({
-            where: { status: 'PENDING' },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        userName: true,
-                        email: true
-                    }
-                },
-                images: {
-                    select: {
-                        id: true,
-                        url: true
-                    }
-                }
-            },
-            orderBy: { createdAt: 'desc' }
-        });
-        return products.map(product => ({
-            id: product.id,
-            title: product.title,
-            description: product.description,
-            createdAt: product.createdAt,
-            user: product.user,
-            images: product.images
-        }));
-    }
-    async approveProduct(productId, adminId) {
-        await this.prisma.$transaction(async (tx) => {
-            // Update product status
-            await tx.product.update({
-                where: { id: productId },
-                data: { status: 'APPROVED' }
-            });
-            // Log moderation action
-            await this.moderationLogRepository.create({
-                productId,
-                moderatorId: adminId,
-                action: 'APPROVED'
-            });
-        });
-    }
-    async rejectProduct(productId, adminId, reason) {
-        await this.prisma.$transaction(async (tx) => {
-            // Update product status
-            await tx.product.update({
-                where: { id: productId },
-                data: { status: 'REJECTED' }
-            });
-            // Log moderation action
-            await this.moderationLogRepository.create({
-                productId,
-                moderatorId: adminId,
-                action: 'REJECTED',
-                reason
-            });
-        });
     }
     async getVipUsers() {
         return await this.prisma.user.findMany({

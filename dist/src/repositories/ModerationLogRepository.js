@@ -1,11 +1,10 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModerationLogRepository = void 0;
-const db_1 = __importDefault(require("../config/db"));
 class ModerationLogRepository {
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
     async create(data) {
         const prismaData = {
             product: { connect: { id: data.productId } },
@@ -14,16 +13,16 @@ class ModerationLogRepository {
             reason: data.reason,
             createdAt: new Date(),
         };
-        return db_1.default.moderationLog.create({ data: prismaData });
+        return this.prisma.moderationLog.create({ data: prismaData });
     }
     async findById(id) {
-        return db_1.default.moderationLog.findUnique({ where: { id } });
+        return this.prisma.moderationLog.findUnique({ where: { id } });
     }
     async findAll() {
-        return db_1.default.moderationLog.findMany();
+        return this.prisma.moderationLog.findMany();
     }
     async findRecent(limit = 10) {
-        return db_1.default.moderationLog.findMany({
+        return this.prisma.moderationLog.findMany({
             take: limit,
             orderBy: { createdAt: 'desc' },
             include: {
@@ -52,10 +51,10 @@ class ModerationLogRepository {
             prismaData.action = data.action;
         if (data.reason !== undefined)
             prismaData.reason = data.reason;
-        return db_1.default.moderationLog.update({ where: { id }, data: prismaData });
+        return this.prisma.moderationLog.update({ where: { id }, data: prismaData });
     }
     async delete(id) {
-        await db_1.default.moderationLog.delete({ where: { id } });
+        await this.prisma.moderationLog.delete({ where: { id } });
     }
 }
 exports.ModerationLogRepository = ModerationLogRepository;

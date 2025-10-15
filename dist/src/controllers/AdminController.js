@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminController = void 0;
 const AdminService_1 = require("../services/AdminService");
+const client_1 = require("@prisma/client");
 class AdminController {
     constructor() {
         this.adminService = new AdminService_1.AdminService();
@@ -42,43 +43,36 @@ class AdminController {
             res.status(500).json(response);
         }
     }
-    async approveProduct(req, res) {
+    async moderateProduct(req, res) {
         try {
             const productId = parseInt(req.params.id);
             const adminId = req.user.id;
-            await this.adminService.approveProduct(productId, adminId);
+            const { action, reason } = req.body;
+            if (!Object.values(client_1.Action).includes(action)) {
+                const response = {
+                    success: false,
+                    message: 'Action de modération invalide'
+                };
+                res.status(400).json(response);
+                return;
+            }
+            await this.adminService.moderateProduct({
+                productId,
+                moderatorId: adminId,
+                action,
+                reason
+            });
             const response = {
                 success: true,
-                message: 'Produit approuvé avec succès'
+                message: `Produit ${action === client_1.Action.APPROVED ? 'approuvé' : 'rejeté'} avec succès`
             };
             res.json(response);
         }
         catch (error) {
-            console.error('Error approving product:', error);
+            console.error('Error moderating product:', error);
             const response = {
                 success: false,
-                message: 'Erreur lors de l\'approbation du produit'
-            };
-            res.status(500).json(response);
-        }
-    }
-    async rejectProduct(req, res) {
-        try {
-            const productId = parseInt(req.params.id);
-            const adminId = req.user.id;
-            const { reason } = req.body;
-            await this.adminService.rejectProduct(productId, adminId, reason);
-            const response = {
-                success: true,
-                message: 'Produit rejeté avec succès'
-            };
-            res.json(response);
-        }
-        catch (error) {
-            console.error('Error rejecting product:', error);
-            const response = {
-                success: false,
-                message: 'Erreur lors du rejet du produit'
+                message: 'Erreur lors de la modération du produit'
             };
             res.status(500).json(response);
         }

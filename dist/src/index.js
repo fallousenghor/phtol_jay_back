@@ -12,7 +12,7 @@ app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../../uploads')));
 app.use('/api', routes_1.default);
-const PORT = process.env.PORT || 3007;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port :  http://localhost:${PORT}`);
 });

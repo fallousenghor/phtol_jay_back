@@ -13,8 +13,7 @@ router.use((0, authMiddleware_1.authorize)(enums_1.Role.ADMIN));
 router.get('/stats', adminController.getAdminStats.bind(adminController));
 // Gestion produits en attente
 router.get('/pending-products', adminController.getPendingProducts.bind(adminController));
-router.post('/products/:id/approve', adminController.approveProduct.bind(adminController));
-router.post('/products/:id/reject', adminController.rejectProduct.bind(adminController));
+router.post('/products/:id/moderate', adminController.moderateProduct.bind(adminController));
 // Gestion utilisateurs VIP
 router.get('/vip-users', adminController.getVipUsers.bind(adminController));
 router.post('/users/:id/toggle-vip', adminController.toggleVipStatus.bind(adminController));
