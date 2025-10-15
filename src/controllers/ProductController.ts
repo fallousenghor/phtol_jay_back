@@ -44,10 +44,11 @@ export class ProductController {
 
   async findAll(req: Request, res: Response): Promise<void> {
     try {
-      const { categoryId, status } = req.query;
+      const { categoryId, status, ownerId } = req.query;
       const products = await this.productService.findAll(
         categoryId ? parseInt(categoryId as string) : undefined,
-        status as 'PENDING' | 'APPROVED' | 'REJECTED' | undefined
+        status as 'PENDING' | 'APPROVED' | 'REJECTED' | undefined,
+        ownerId ? parseInt(ownerId as string) : undefined
       );
       res.status(SuccessCode.OK).json(products);
     } catch (error) {

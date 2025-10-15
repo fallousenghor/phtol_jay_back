@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ModerationLogRepository } from '../repositories/ModerationLogRepository';
+// import { ModerationLogRepository } from '../repositories/ModerationLogRepository';
 
 export interface AdminStats {
   totalProducts: number;

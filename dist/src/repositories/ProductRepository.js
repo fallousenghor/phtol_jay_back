@@ -42,11 +42,12 @@ class ProductRepository {
             }
         });
     }
-    async findAll(categoryId, status) {
+    async findAll(categoryId, status, ownerId) {
         return db_1.default.product.findMany({
             where: {
                 ...(categoryId && { categoryId }),
-                ...(status && { status })
+                ...(status && { status }),
+                ...(ownerId && { userId: ownerId })
             },
             include: {
                 images: true,

@@ -44,8 +44,8 @@ class ProductController {
     }
     async findAll(req, res) {
         try {
-            const { categoryId, status } = req.query;
-            const products = await this.productService.findAll(categoryId ? parseInt(categoryId) : undefined, status);
+            const { categoryId, status, ownerId } = req.query;
+            const products = await this.productService.findAll(categoryId ? parseInt(categoryId) : undefined, status, ownerId ? parseInt(ownerId) : undefined);
             res.status(successCode_1.SuccessCode.OK).json(products);
         }
         catch (error) {

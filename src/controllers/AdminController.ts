@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { AdminService } from '../services/AdminService';
 import { ApiResponse } from '../types/ApiResponse';
-import { Action } from '@prisma/client';
+import { Action } from '../types/enums';
+
 
 export class AdminController {
   private adminService: AdminService;

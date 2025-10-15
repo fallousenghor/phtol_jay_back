@@ -12,8 +12,8 @@ export class ProductService {
     return this.productRepository.findById(id);
   }
 
-  async findAll(categoryId?: number, status?: 'PENDING' | 'APPROVED' | 'REJECTED'): Promise<Product[]> {
-    return this.productRepository.findAll(categoryId, status);
+  async findAll(categoryId?: number, status?: 'PENDING' | 'APPROVED' | 'REJECTED', ownerId?: number): Promise<Product[]> {
+    return this.productRepository.findAll(categoryId, status, ownerId);
   }
 
   async update(id: number, data: UpdateProduct): Promise<Product> {

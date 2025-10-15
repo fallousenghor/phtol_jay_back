@@ -8,7 +8,12 @@ const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
 const routes_1 = __importDefault(require("./routes"));
 const app = (0, express_1.default)();
-app.use((0, cors_1.default)());
+app.use((0, cors_1.default)({
+    origin: process.env.NODE_ENV === 'production'
+        ? ['https://photoljay-frontend.onrender.com', 'https://photoljay.com'] // Replace with actual frontend URLs
+        : ['http://localhost:4200', 'http://localhost:3000'], // Allow local development
+    credentials: true
+}));
 app.use(express_1.default.json());
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../../uploads')));
 app.use('/api', routes_1.default);

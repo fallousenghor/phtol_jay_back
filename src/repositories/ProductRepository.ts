@@ -41,11 +41,12 @@ export class ProductRepository {
     });
   }
 
-  async findAll(categoryId?: number, status?: 'PENDING' | 'APPROVED' | 'REJECTED'): Promise<Product[]> {
+  async findAll(categoryId?: number, status?: 'PENDING' | 'APPROVED' | 'REJECTED', ownerId?: number): Promise<Product[]> {
     return prisma.product.findMany({
       where: {
         ...(categoryId && { categoryId }),
-        ...(status && { status })
+        ...(status && { status }),
+        ...(ownerId && { userId: ownerId })
       },
       include: {
         images: true,

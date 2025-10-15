@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminController = void 0;
 const AdminService_1 = require("../services/AdminService");
-const client_1 = require("@prisma/client");
+const enums_1 = require("../types/enums");
 class AdminController {
     constructor() {
         this.adminService = new AdminService_1.AdminService();
@@ -48,7 +48,7 @@ class AdminController {
             const productId = parseInt(req.params.id);
             const adminId = req.user.id;
             const { action, reason } = req.body;
-            if (!Object.values(client_1.Action).includes(action)) {
+            if (!Object.values(enums_1.Action).includes(action)) {
                 const response = {
                     success: false,
                     message: 'Action de modération invalide'
@@ -64,7 +64,7 @@ class AdminController {
             });
             const response = {
                 success: true,
-                message: `Produit ${action === client_1.Action.APPROVED ? 'approuvé' : 'rejeté'} avec succès`
+                message: `Produit ${action === enums_1.Action.APPROVED ? 'approuvé' : 'rejeté'} avec succès`
             };
             res.json(response);
         }
