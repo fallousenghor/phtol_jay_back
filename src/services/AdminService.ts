@@ -3,18 +3,25 @@ import { ModerationLogRepository } from '../repositories/ModerationLogRepository
 
 export interface AdminStats {
   totalProducts: number;
-  pendingApprovals: number;
-  expiringProducts: number;
-  rejectedToday: number;
-  vipActiveProducts: number;
-  avgModerationTime: number;
-  totalVipUsers: number;
+  pendingProducts: number;
+  approvedProducts: number;
+  rejectedProducts: number;
+  totalUsers: number;
+  vipUsers: number;
   totalViews: number;
   totalModerations: number;
-  recentModerations: ModerationAction[];
+  recentModerations: Array<{
+    id: number;
+    productTitle: string;
+    moderatorName: string;
+    action: 'APPROVED' | 'REJECTED';
+    date: Date;
+    reason?: string;
+  }>;
   approvalTrends: Array<{
     month: string;
     approvals: number;
+    views: number;
   }>;
   viewTrends: Array<{
     month: string;
@@ -47,32 +54,30 @@ export interface ModerationAction {
   reason?: string;
 }
 
+export interface ModerateProductParams {
+  productId: number;
+  moderatorId: number;
+  action: 'APPROVED' | 'REJECTED';
+  reason?: string;
+}
+
 export class AdminService {
   private prisma: PrismaClient;
   private moderationLogRepository: ModerationLogRepository;
 
   constructor() {
     this.prisma = new PrismaClient();
-    this.moderationLogRepository = new ModerationLogRepository();
+    this.moderationLogRepository = new ModerationLogRepository(this.prisma);
   }
 
   async getAdminStats(): Promise<AdminStats> {
-    // Date pour les photos expirant dans 3 jours
-    const expirationDate = new Date();
-    expirationDate.setDate(expirationDate.getDate() + 3);
-
-    // Date du début de la journée
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
     const [
       totalProducts,
-      pendingApprovals,
-      expiringProducts,
-      rejectedToday,
-      vipActiveProducts,
-      avgModerationTime,
-      totalVipUsers,
+      pendingProducts,
+      approvedProducts,
+      rejectedProducts,
+      totalUsers,
+      vipUsers,
       totalViews,
       totalModerations,
       recentModerations,
@@ -81,104 +86,32 @@ export class AdminService {
     ] = await Promise.all([
       this.prisma.product.count(),
       this.prisma.product.count({ where: { status: 'PENDING' } }),
-      this.prisma.product.count({
-        where: {
-          expiresAt: {
-            lte: expirationDate,
-            gt: new Date()
-          },
-          status: 'APPROVED'
-        }
-      }),
-      this.prisma.product.count({
-        where: {
-          status: 'PENDING',
-          updatedAt: {
-            gte: todayStart
-          }
-        }
-      }),
-      this.prisma.product.count({
-        where: {
-          status: 'APPROVED',
-          user: {
-            isVIP: true
-          }
-        }
-      }),
-      // Calculer le temps moyen entre la création du produit et sa modération
-      this.prisma.$queryRaw<[{avg_time: number}]>`
-        SELECT AVG(EXTRACT(EPOCH FROM (ml."createdAt" - p."createdAt"))/60)::integer as avg_time
-        FROM "ModerationLog" ml
-        JOIN "Product" p ON p.id = ml."productId"
-        WHERE ml."action" IN ('APPROVED', 'REJECTED')
-      `.then(result => result[0]?.avg_time || 0),
+      this.prisma.product.count({ where: { status: 'APPROVED' } }),
+      this.prisma.product.count({ where: { status: 'REJECTED' } }),
+      this.prisma.user.count(),
       this.prisma.user.count({ where: { isVIP: true } }),
       this.prisma.product.aggregate({
         _sum: { views: true }
       }).then(result => result._sum.views || 0),
       this.prisma.moderationLog.count(),
-      this.getRecentModerations(),
+      this.getRecentModerations(5),
       this.getApprovalTrends(),
       this.getViewTrends()
     ]);
 
     return {
       totalProducts,
-      pendingApprovals,
-      expiringProducts,
-      rejectedToday,
-      vipActiveProducts,
-      avgModerationTime,
-      totalVipUsers,
+      pendingProducts,
+      approvedProducts,
+      rejectedProducts,
+      totalUsers,
+      vipUsers,
       totalViews,
       totalModerations,
       recentModerations,
       approvalTrends,
       viewTrends
     };
-  }
-
-  private async getApprovalTrends(): Promise<Array<{ month: string; approvals: number }>> {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-    const trends = await this.prisma.$queryRaw<Array<{ month: string; approvals: number }>>`
-      SELECT
-        TO_CHAR("createdAt", 'YYYY-MM') as month,
-        COUNT(CASE WHEN "status" = 'APPROVED' THEN 1 END) as approvals
-      FROM "Product"
-      WHERE "createdAt" >= ${sixMonthsAgo}
-      GROUP BY TO_CHAR("createdAt", 'YYYY-MM')
-      ORDER BY month DESC
-      LIMIT 6
-    `;
-
-    return trends.map(trend => ({
-      month: trend.month,
-      approvals: Number(trend.approvals)
-    }));
-  }
-
-  private async getViewTrends(): Promise<Array<{ month: string; views: number }>> {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-    const trends = await this.prisma.$queryRaw<Array<{ month: string; views: number }>>`
-      SELECT
-        TO_CHAR("updatedAt", 'YYYY-MM') as month,
-        SUM("views") as views
-      FROM "Product"
-      WHERE "updatedAt" >= ${sixMonthsAgo}
-      GROUP BY TO_CHAR("updatedAt", 'YYYY-MM')
-      ORDER BY month DESC
-      LIMIT 6
-    `;
-
-    return trends.map(trend => ({
-      month: trend.month,
-      views: Number(trend.views || 0)
-    }));
   }
 
   async getPendingProducts(): Promise<PendingProduct[]> {
@@ -212,39 +145,80 @@ export class AdminService {
     }));
   }
 
-  async approveProduct(productId: number, adminId: number): Promise<void> {
+  async moderateProduct(params: ModerateProductParams): Promise<void> {
+    const { productId, moderatorId, action, reason } = params;
+
     await this.prisma.$transaction(async (tx) => {
+      const product = await tx.product.findUnique({
+        where: { id: productId }
+      });
+
+      if (!product) {
+        throw new Error('Product not found');
+      }
+
       // Update product status
       await tx.product.update({
         where: { id: productId },
-        data: { status: 'APPROVED' }
+        data: {
+          status: action
+        }
       });
 
-      // Log moderation action
+      // Create moderation log
       await this.moderationLogRepository.create({
         productId,
-        moderatorId: adminId,
-        action: 'APPROVED'
+        moderatorId,
+        action,
+        reason
       });
+
+      // TODO: Send notification to product owner
     });
   }
 
-  async rejectProduct(productId: number, adminId: number, reason?: string): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      // Update product status
-      await tx.product.update({
-        where: { id: productId },
-        data: { status: 'REJECTED' }
-      });
+  private async getApprovalTrends(): Promise<Array<{ month: string; approvals: number; views: number }>> {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-      // Log moderation action
-      await this.moderationLogRepository.create({
-        productId,
-        moderatorId: adminId,
-        action: 'REJECTED',
-        reason
-      });
-    });
+    const trends = await this.prisma.$queryRaw<Array<{ month: string; approvals: number; views: number }>>`
+      SELECT
+        TO_CHAR("createdAt", 'YYYY-MM') as month,
+        COUNT(CASE WHEN "status" = 'APPROVED' THEN 1 END) as approvals,
+        SUM("views") as views
+      FROM "Product"
+      WHERE "createdAt" >= ${sixMonthsAgo}
+      GROUP BY TO_CHAR("createdAt", 'YYYY-MM')
+      ORDER BY month DESC
+      LIMIT 6
+    `;
+
+    return trends.map(trend => ({
+      month: trend.month,
+      approvals: Number(trend.approvals),
+      views: Number(trend.views || 0)
+    }));
+  }
+
+  private async getViewTrends(): Promise<Array<{ month: string; views: number }>> {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const trends = await this.prisma.$queryRaw<Array<{ month: string; views: number }>>`
+      SELECT
+        TO_CHAR("createdAt", 'YYYY-MM') as month,
+        SUM("views") as views
+      FROM "Product"
+      WHERE "createdAt" >= ${sixMonthsAgo}
+      GROUP BY TO_CHAR("createdAt", 'YYYY-MM')
+      ORDER BY month DESC
+      LIMIT 6
+    `;
+
+    return trends.map(trend => ({
+      month: trend.month,
+      views: Number(trend.views || 0)
+    }));
   }
 
   async getVipUsers(): Promise<Array<{ id: number; userName: string; email: string; isVIP: boolean }>> {

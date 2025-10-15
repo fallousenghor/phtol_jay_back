@@ -9,64 +9,28 @@ class AdminService {
         this.moderationLogRepository = new ModerationLogRepository_1.ModerationLogRepository();
     }
     async getAdminStats() {
-        // Date pour les photos expirant dans 3 jours
-        const expirationDate = new Date();
-        expirationDate.setDate(expirationDate.getDate() + 3);
-        // Date du début de la journée
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        const [totalProducts, pendingApprovals, expiringProducts, rejectedToday, vipActiveProducts, avgModerationTime, totalVipUsers, totalViews, totalModerations, recentModerations, approvalTrends, viewTrends] = await Promise.all([
+        const [totalProducts, pendingProducts, approvedProducts, rejectedProducts, totalUsers, vipUsers, totalViews, totalModerations, recentModerations, approvalTrends, viewTrends] = await Promise.all([
             this.prisma.product.count(),
             this.prisma.product.count({ where: { status: 'PENDING' } }),
-            this.prisma.product.count({
-                where: {
-                    expiresAt: {
-                        lte: expirationDate,
-                        gt: new Date()
-                    },
-                    status: 'APPROVED'
-                }
-            }),
-            this.prisma.product.count({
-                where: {
-                    status: 'PENDING',
-                    updatedAt: {
-                        gte: todayStart
-                    }
-                }
-            }),
-            this.prisma.product.count({
-                where: {
-                    status: 'APPROVED',
-                    user: {
-                        isVIP: true
-                    }
-                }
-            }),
-            // Calculer le temps moyen entre la création du produit et sa modération
-            this.prisma.$queryRaw `
-        SELECT AVG(EXTRACT(EPOCH FROM (ml."createdAt" - p."createdAt"))/60)::integer as avg_time
-        FROM "ModerationLog" ml
-        JOIN "Product" p ON p.id = ml."productId"
-        WHERE ml."action" IN ('APPROVED', 'REJECTED')
-      `.then(result => result[0]?.avg_time || 0),
+            this.prisma.product.count({ where: { status: 'APPROVED' } }),
+            this.prisma.product.count({ where: { status: 'REJECTED' } }),
+            this.prisma.user.count(),
             this.prisma.user.count({ where: { isVIP: true } }),
             this.prisma.product.aggregate({
                 _sum: { views: true }
             }).then(result => result._sum.views || 0),
             this.prisma.moderationLog.count(),
-            this.getRecentModerations(),
+            this.getRecentModerations(5),
             this.getApprovalTrends(),
             this.getViewTrends()
         ]);
         return {
             totalProducts,
-            pendingApprovals,
-            expiringProducts,
-            rejectedToday,
-            vipActiveProducts,
-            avgModerationTime,
-            totalVipUsers,
+            pendingProducts,
+            approvedProducts,
+            rejectedProducts,
+            totalUsers,
+            vipUsers,
             totalViews,
             totalModerations,
             recentModerations,
@@ -80,7 +44,8 @@ class AdminService {
         const trends = await this.prisma.$queryRaw `
       SELECT
         TO_CHAR("createdAt", 'YYYY-MM') as month,
-        COUNT(CASE WHEN "status" = 'APPROVED' THEN 1 END) as approvals
+        COUNT(CASE WHEN "status" = 'APPROVED' THEN 1 END) as approvals,
+        SUM("views") as views
       FROM "Product"
       WHERE "createdAt" >= ${sixMonthsAgo}
       GROUP BY TO_CHAR("createdAt", 'YYYY-MM')
@@ -89,7 +54,8 @@ class AdminService {
     `;
         return trends.map(trend => ({
             month: trend.month,
-            approvals: Number(trend.approvals)
+            approvals: Number(trend.approvals),
+            views: Number(trend.views || 0)
         }));
     }
     async getViewTrends() {
@@ -97,11 +63,11 @@ class AdminService {
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
         const trends = await this.prisma.$queryRaw `
       SELECT
-        TO_CHAR("updatedAt", 'YYYY-MM') as month,
+        TO_CHAR("createdAt", 'YYYY-MM') as month,
         SUM("views") as views
       FROM "Product"
-      WHERE "updatedAt" >= ${sixMonthsAgo}
-      GROUP BY TO_CHAR("updatedAt", 'YYYY-MM')
+      WHERE "createdAt" >= ${sixMonthsAgo}
+      GROUP BY TO_CHAR("createdAt", 'YYYY-MM')
       ORDER BY month DESC
       LIMIT 6
     `;

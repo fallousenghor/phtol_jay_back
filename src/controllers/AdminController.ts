@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AdminService } from '../services/AdminService';
 import { ApiResponse } from '../types/ApiResponse';
+import { Action } from '@prisma/client';
 
 export class AdminController {
   private adminService: AdminService;
@@ -45,46 +46,38 @@ export class AdminController {
     }
   }
 
-  async approveProduct(req: Request, res: Response): Promise<void> {
+  async moderateProduct(req: Request, res: Response): Promise<void> {
     try {
       const productId = parseInt(req.params.id);
-      const adminId = (req as any).user.id;
+      const adminId = (req.user as { id: number }).id;
+      const { action, reason } = req.body;
 
-      await this.adminService.approveProduct(productId, adminId);
+      if (!Object.values(Action).includes(action)) {
+        const response: ApiResponse = {
+          success: false,
+          message: 'Action de modération invalide'
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      await this.adminService.moderateProduct({
+        productId,
+        moderatorId: adminId,
+        action,
+        reason
+      });
 
       const response: ApiResponse = {
         success: true,
-        message: 'Produit approuvé avec succès'
+        message: `Produit ${action === Action.APPROVED ? 'approuvé' : 'rejeté'} avec succès`
       };
       res.json(response);
     } catch (error) {
-      console.error('Error approving product:', error);
+      console.error('Error moderating product:', error);
       const response: ApiResponse = {
         success: false,
-        message: 'Erreur lors de l\'approbation du produit'
-      };
-      res.status(500).json(response);
-    }
-  }
-
-  async rejectProduct(req: Request, res: Response): Promise<void> {
-    try {
-      const productId = parseInt(req.params.id);
-      const adminId = (req as any).user.id;
-      const { reason } = req.body;
-
-      await this.adminService.rejectProduct(productId, adminId, reason);
-
-      const response: ApiResponse = {
-        success: true,
-        message: 'Produit rejeté avec succès'
-      };
-      res.json(response);
-    } catch (error) {
-      console.error('Error rejecting product:', error);
-      const response: ApiResponse = {
-        success: false,
-        message: 'Erreur lors du rejet du produit'
+        message: 'Erreur lors de la modération du produit'
       };
       res.status(500).json(response);
     }
